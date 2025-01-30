@@ -32,15 +32,15 @@ from uamp25_87_files.build_llava_dataset.data_augmentation.data_augmentation imp
 
 
 set_all_seeds(42)
+# choose the data augmentation to apply
 data_augmentation = [
-        # invert_color,
+        invert_color,
         random_rotate,
         horizontal_flip,
-        # [horizontal_flip, invert_color],
-        # [horizontal_flip, random_rotate],
+        [horizontal_flip, invert_color],
+        [horizontal_flip, random_rotate],
     ]
-include_hpe_data = False
-# Function to create error messages dynamically
+
 def construct_error_message_boolean(row):
     messages = []
     for col in row.index:
@@ -77,71 +77,15 @@ def construct_error_message_temporal(row):
                 else:
                     
                     messages.append(f"{error_name} from frame time {row[col][0]}s to {row[col][1]}s")
-            # else:
-            #     messages.append(f"{error_name}: None")
     if len(messages) == 0:
-
-        # return "He performs it correctly, without any subtle errors."
         return random.choice(possible_correct_messages)
     elif len(messages) == 1:
         first_part_message = random.choice(possible_only_one_error_messages)
     elif len(messages) > 1:
-        # messages = messages[::-1]
         first_part_message = random.choice(possible_multiple_errors_messages)
     messages = " and ".join(messages)
     resulting_message = f"{first_part_message} {messages}."
     return resulting_message
-
-def filter_frames(data, max_N_frames):
-    total = len(data)
-
-    if total <= max_N_frames:
-        return data
-    # Compute equally spaced indices
-    indices = [round(i * (total - 1) / (max_N_frames - 1)) for i in range(max_N_frames)]
-    assert len(indices) == max_N_frames
-
-    return [data[i] for i in indices]
-
-def filter_keypoints(hpe_data, relevant_keypoints):
-    for data in hpe_data:
-        for data_instances in data["instances"]:
-            data_instances["keypoints"] = [keypoint for i, keypoint in enumerate(data_instances["keypoints"]) if i in relevant_keypoints]
-    return hpe_data
-
-
-def hpe_data_message(row):
-    with open(get_keypoint_path(row['filename'], exercise)) as f:
-        hpe_data = json.load(f)
-
-    for data in hpe_data:
-        for data_instances in data["instances"]:
-            del data_instances["keypoint_scores"]
-
-    # get error type
-    error_body_part = []
-    relevant_keypoints = set()
-    for col in row.index:
-        if col.startswith("error_type_"):
-            error_name = col.replace("error_type_", "").replace("_", " ")
-            error_single_word = error_name.split(" ")
-            for word in error_single_word:
-                word = Word(word).singularize()
-                for key, value in human36m_body_parts.items():
-                    if word.lower() in (key.lower()):
-                        for index in value:
-                            relevant_keypoints.add(index)
-
-    relevant_keypoints = find_nearby_joints(relevant_keypoints, 1)
-    relevant_keypoints = sorted(relevant_keypoints)
-    # reduce the frames number
-    hpe_data = filter_frames(hpe_data, 16)
-    # reduce the keypoints cardinality
-    hpe_data = filter_keypoints(hpe_data, relevant_keypoints)
-    relevant_bodyparts = get_body_parts_by_indexes(relevant_keypoints)
-    # relevant_bodyparts_to_string = ", ".join(relevant_bodyparts)
-
-    return f"To help you identify the subject, these are the Human Pose Estimation data extract in a 3D space, for the following body parts in the following order {relevant_bodyparts}: {hpe_data}."
 
 # Function to create the JSON structure for each row
 def create_json_structure_llava(row, idx, data_type=None, augmented=False):
@@ -158,8 +102,6 @@ def create_json_structure_llava(row, idx, data_type=None, augmented=False):
     input_message = (
         f"<image>\nThe subject is performing a Squat or a Overhead Press (OHP) exercise. Which one is he making? Is he making a mistake? If so, what mistake is he making?"
     )
-    if include_hpe_data:
-        input_message = f"{input_message} {hpe_data_message(row)}."
     return {
         # "id": f"{video_id(video_path)}",
         "id": row["filename"],
@@ -183,8 +125,6 @@ def create_json_structure_qwen(row, idx, data_type=None, augmented=False):
         data_source = ("Fitness-AQA",)
 
     input_message = f"The subject is performing a Squat or a Overhead Press (OHP) exercise. Which one is he making? Is he making a mistake? If so, what mistake is he making?"
-    if include_hpe_data:
-        input_message = f"{input_message} {hpe_data_message(row)}."
     return {
         # "id": f"{video_id(video_path)}",
         "id": row["filename"],
