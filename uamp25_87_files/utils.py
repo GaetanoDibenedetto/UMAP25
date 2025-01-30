@@ -18,17 +18,6 @@ path_label_errors = lambda exercise_type: get_path_label_errors(exercise_type)
 
 video_id = lambda video_path: video_path.split("/")[-1].replace(".mp4", '')
 
-#     if exercise_type == "Squat":
-#         dict(
-#     knees_forward=os.path.join(data_archives_path, exercise_type, "Labeled_Dataset", "Labels", "error_knees_forward.json"),
-#     knees_inward=os.path.join(data_archives_path, exercise_type, "Labeled_Dataset", "Labels", "error_knees_inward.json")
-# )
-#     elif exercise_type == "OHP":
-#         dict(
-#     knees_forward=os.path.join(data_archives_path, exercise_type, "Labeled_Dataset", "Labels", "error_knees_forward.json"),
-#     knees_inward=os.path.join(data_archives_path, exercise_type, "Labeled_Dataset", "Labels", "error_knees_inward.json")
-# )
-
 path_split_info = lambda exercise_type: dict(
     train = os.path.join(data_archives_path, exercise_type, "Labeled_Dataset", "Splits", "train_keys.json"),
     test = os.path.join(data_archives_path, exercise_type, "Labeled_Dataset", "Splits", "test_keys.json"),
@@ -127,17 +116,6 @@ def load_video(video_path, max_frames_num, fps=1, force_sample=False):
     spare_frames = vr.get_batch(frame_idx).asnumpy()
     # import pdb;pdb.set_trace()
     return spare_frames, frame_time, video_time
-
-# def horizontal_flip_video(input_path, output_path):
-#     # check if the folder where i want to save the video exists
-#     folder = os.path.dirname(output_path)
-#     if not os.path.exists(folder):
-#         os.makedirs(folder)
-
-#     stream = ffmpeg.input(input_path)
-#     stream = ffmpeg.hflip(stream)
-#     stream = ffmpeg.output(stream, output_path, loglevel="quiet")
-#     ffmpeg.run(stream)
 
 def get_augmentation_name(technique_combo):
     if isinstance(technique_combo, list):
@@ -278,34 +256,6 @@ def build_skeleton_graph():
         5: [6],  # Left Knee → Left Ankle
     }
     return skeleton
-
-
-# def bfs_nerby_joints(starting_joints, distance):
-#     """Finds joints within a certain distance from the given starting joints with beam first search technique"""
-#     skeleton = build_skeleton_graph()
-#     visited = set()
-#     queue = deque()
-
-#     # Initialize queue with starting joints at distance 0
-#     for joint in starting_joints:
-#         queue.append((joint, 0))
-#         visited.add(joint)
-
-#     result = set()
-
-#     while queue:
-#         joint, dist = queue.popleft()
-
-#         if dist <= distance:
-#             result.add(joint)
-
-#         if dist < distance:  # Continue exploring within distance limit
-#             for neighbor in skeleton.get(joint, []):
-#                 if neighbor not in visited:
-#                     visited.add(neighbor)
-#                     queue.append((neighbor, dist + 1))
-
-#     return sorted(result)
 
 
 def find_nearby_joints(start_joints, max_distance):
