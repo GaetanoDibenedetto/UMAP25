@@ -3,9 +3,6 @@ import os.path
 import random
 import sys
 
-from tqdm import tqdm
-from textblob import Word
-
 # go up one directory level from this file's directory:
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..','..'))
 # prepend parent directory to the system path:
@@ -15,32 +12,18 @@ from load_dataset import *
 
 from uamp25_87_files.utils import (
     get_augmentation_name,
-    get_keypoint_path,
     get_video_path,
     path_keypoints,
     path_label_errors,
     set_all_seeds,
-    video_id,
     possible_correct_messages,
     possible_only_one_error_messages,
-    possible_multiple_errors_messages,
-    human36m_body_parts,
-    find_nearby_joints,
-    get_body_parts_by_indexes
+    possible_multiple_errors_messages
 )
-from uamp25_87_files.build_llava_dataset.data_augmentation.data_augmentation import invert_color, random_rotate, horizontal_flip, process_videos
+from uamp25_87_files.build_llava_dataset.data_augmentation.data_augmentation import horizontal_flip, process_videos
 
 
-set_all_seeds(42)
-# choose the data augmentation to apply
-data_augmentation = [
-        invert_color,
-        random_rotate,
-        horizontal_flip,
-        [horizontal_flip, invert_color],
-        [horizontal_flip, random_rotate],
-    ]
-
+# Function to create error messages dynamically
 def construct_error_message_boolean(row):
     messages = []
     for col in row.index:
@@ -90,9 +73,6 @@ def construct_error_message_temporal(row):
 # Function to create the JSON structure for each row
 def create_json_structure_llava(row, idx, data_type=None, augmented=False):
     video_path = get_video_path(row["filename"], exercise).replace("archives_data/", "")
-    # if data_augmentation is not None:
-    #     print(augmented)
-    #     video_path = video_path.replace("vicdeos", "videos_horizontal_flip")
 
     if data_type is not None:
         data_source= f"Fitness-AQA_{data_type}",   
@@ -107,7 +87,7 @@ def create_json_structure_llava(row, idx, data_type=None, augmented=False):
         "id": row["filename"],
         "conversations": [
             {"from": "human", "value": input_message},
-            {"from": "gpt", "value": f"The subject is performing a {exercise}. {construct_error_message_boolean(row)}"},
+            {"from": "gpt", "value": f"The subject is performing a {exercise}. {construct_error_message(row)}"},
         ],
         "data_source": data_source,
         "video": video_path,
@@ -115,9 +95,6 @@ def create_json_structure_llava(row, idx, data_type=None, augmented=False):
 
 def create_json_structure_qwen(row, idx, data_type=None, augmented=False):
     video_path = get_video_path(row["filename"], exercise).replace("archives_data/", "")
-    # if data_augmentation is not None:
-    #     print(augmented)
-    #     video_path = video_path.replace("videos", "videos_horizontal_flip")
 
     if data_type is not None:
         data_source = (f"Fitness-AQA_{data_type}",)
@@ -130,7 +107,7 @@ def create_json_structure_qwen(row, idx, data_type=None, augmented=False):
         "id": row["filename"],
         "conversations": [
             {"from": "user", "value": input_message},
-            {"from": "assistant", "value": f"The subject is performing a {exercise}. {construct_error_message_boolean(row)}"},
+            {"from": "assistant", "value": f"The subject is performing a {exercise}. {construct_error_message(row)}"},
         ],
         "data_source": data_source,
         "video": video_path,
@@ -168,6 +145,21 @@ def get_errors_count(df_train, print_counts=False):
 SEPARATOR = os.sep
 exercise_type = ["Squat", "OHP"]
 
+set_all_seeds(42)
+data_augmentation = [
+    # invert_color,
+    # random_rotate,
+    horizontal_flip,
+    # [horizontal_flip, invert_color],
+    # [horizontal_flip, random_rotate],
+]
+temporal_data = True
+
+if temporal_data == True:
+    construct_error_message = construct_error_message_temporal
+else:
+    construct_error_message = construct_error_message_boolean
+
 train_json_base, train_json_augmented, test_json = [], [], []
 
 dataset_dict = {}
@@ -176,10 +168,6 @@ for exercise in exercise_type:
     dataset = LoadDatasetKeypoints()
     path_label = path_label_errors(exercise)
     df = dataset.load_dataset_info(path_keypoints, path_label)
-    # max_lenght_sequence = dataset.get_max_lenght_sequence(df)
-    # df_augmented = dataset.load_dataset_info(path_keypoints_augmented)
-    # df_augmented = df_augmented[df_augmented["label"] == "[correct_posture]"]
-    # df = pd.concat([df, df_augmented], ignore_index=True)
 
     if data_augmentation is not None:
         process_videos(df, data_augmentation, exercise)
@@ -201,11 +189,8 @@ def create_json_for_llava_training(df: pd.DataFrame, data_type=None, balance=Non
     json_list = [create_json_structure_llava(row, idx, data_type) for idx, row in df.iterrows()]
     if balance is None:
         return json_list
-    # new_json_list = copy.deepcopy(json_list)
 
     if data_augmentation is not None and balance is not None and min is not None:
-        # get the max lenght of files in balance
-        # max_lenght = max([len(files) for files in balance.values()])
 
         for key, value in balance.items():
             files = value
@@ -218,13 +203,6 @@ def create_json_for_llava_training(df: pd.DataFrame, data_type=None, balance=Non
 
         new_json_list = [elem for elem in json_list if elem["id"] in set.union(*balance.values())]
 
-        # return the ratio between the lenght of the files and the max lenght, for each key
-        # balance = {key: {"files": files, "ratio": max_lenght / len(files)} for key, files in balance.items()}
-
-        # add n augmented version of the files in balance equal to the ratio
-        # the exceed of integer part of the ratio is added randomly, where the decimal part equals to the percentage of file to add
-        # extract the list of files with a specific error from the json_list
-
         def add_augmented_file(json_list, technique_combo, ratio=1):
             techinique_name = get_augmentation_name(technique_combo)
             temp_list = []
@@ -233,21 +211,13 @@ def create_json_for_llava_training(df: pd.DataFrame, data_type=None, balance=Non
                     temp = copy.deepcopy(elem)
                     temp["video"] = temp["video"].replace("videos", f"videos_{techinique_name}")
                     temp_list.append(temp)
-            # if ratio < 1:
-            #     temp_list = temp_list[: int(ratio * len(temp_list))]
             return temp_list
 
         for key, value in balance.items():
             files = value
-            # ratio = value["ratio"]
-            # data_augmentation_types_to_add = int(ratio) - 1  # -1 because the original files are already in the list
-            # decimal_part = ratio - int(ratio)
             for i, technique_combo in enumerate(data_augmentation):
-                # if i >= data_augmentation_types_to_add:
-                #     break
                 new_json_list.extend(add_augmented_file(json_list, technique_combo))
-            # if decimal_part > 0 and i <= data_augmentation_types_to_add and i + 1 < len(data_augmentation):
-            #     new_json_list.extend(add_augmented_file(json_list, data_augmentation[i + 1], decimal_part))
+
 
     # print final balance of the dataset
     if balance is not None:
@@ -284,23 +254,15 @@ for exercise, value in dataset_dict.items():
     temp_train_base, temp_train_augmented = create_json_for_llava_training(df_train, data_type=f"{exercise}_train", balance=balance, min=min)
     train_json_base.extend(temp_train_base)
     train_json_augmented.extend(temp_train_augmented)
-    # with open(os.path.join(os.path.dirname(__file__), f"train_{exercise}.json"), "w") as json_file:
-    #     json.dump(temp_train, json_file, indent=2)
 
-    # val_json.extend(create_json_for_llava_training(df_val, data_type=f"{exercise}_val"))
     temp_test = create_json_for_llava_training(df_test, data_type=f"{exercise}_test")
     test_json.extend(temp_test)
-    # with open(os.path.join(os.path.dirname(__file__), f"test_{exercise}.json"), "w") as json_file:
-    #     json.dump(temp_test, json_file, indent=2)
 
 with open(os.path.join(os.path.dirname(__file__), "train_step1.json"), "w") as json_file:
     json.dump(train_json_base, json_file, indent=2)
 
 with open(os.path.join(os.path.dirname(__file__), "train_step2.json"), "w") as json_file:
     json.dump(train_json_augmented, json_file, indent=2)
-
-# with open(os.path.join(os.path.dirname(__file__), "val.json"), "w") as json_file:
-#     json.dump(val_json, json_file, indent=2)
 
 with open(os.path.join(os.path.dirname(__file__), "test.json"), "w") as json_file:
     json.dump(test_json, json_file, indent=2)
