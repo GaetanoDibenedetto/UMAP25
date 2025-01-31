@@ -6,7 +6,7 @@ The dataset [Fitness-AQA](https://github.com/ParitoshParmar/Fitness-AQA?tab=read
 
 - All zip files should be extracted in the same location where they are.
 - For more details, compare your file tree with ours: [before](archives_data/files_before_preprocessing.txt) / [after](archives_data/files_after_preprocessing.txt) — preprocessing.
-- Build the dataset in conversation style using the [build_llava_dataset.py](uamp25_87_files/build_llava_dataset/build_llava_dataset.py) script.
+- Build the dataset in conversation style using the [build_llava_dataset_dynamic_step.py](uamp25_87_files/build_llava_dataset/build_llava_dataset_dynamic_step.py) or [build_llava_dataset_two_step](uamp25_87_files/build_llava_dataset/build_llava_dataset_two_step.py) script.
 
 ### To train a model, you should:
 
