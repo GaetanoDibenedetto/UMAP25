@@ -1,4 +1,4 @@
-# UMAP25-87
+# UMAP25
 
 ## Usage
 
