@@ -1,0 +1,7 @@
+Binary Classification Metrics Original Dataset:
+Accuracy: {'knees forward error': 0.6885245901639344, 'knees inward error': 0.8483606557377049, 'elbows error': 0.6489675516224189, 'knees error': 0.831858407079646}
+Precision: {'knees forward error': 0.691358024691358, 'knees inward error': 0.0, 'elbows error': 0.35135135135135137, 'knees error': 0.7553956834532374}
+Recall: {'knees forward error': 0.9940828402366864, 'knees inward error': 0.0, 'elbows error': 0.45348837209302323, 'knees error': 0.8203125}
+F1: {'knees forward error': 0.8155339805825242, 'knees inward error': 0.0, 'elbows error': 0.39593908629441626, 'knees error': 0.7865168539325843}
+AP: {'knees forward error': np.float64(0.6475409809527009), 'knees inward error': np.float64(0.004098360638941145), 'elbows error': np.float64(0.10324483745355505), 'knees error': np.float64(0.1622418874270151)}
+mAP: 0.22928151661805302

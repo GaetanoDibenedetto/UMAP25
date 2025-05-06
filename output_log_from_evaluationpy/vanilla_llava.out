@@ -1,0 +1,5 @@
+Binary Classification Metrics Original Dataset:
+Accuracy: {'Squat': 1.0, 'OHP': 1.0, 'knees forward error': 0.30864197530864196, 'knees inward error': 0.8559670781893004, 'elbows error': 0.7318611987381703, 'knees error': 0.6214511041009464}
+Precision: {'Squat': 1.0, 'OHP': 1.0, 'knees forward error': 0.0, 'knees inward error': 0.0, 'elbows error': 0.0, 'knees error': 0.0}
+Recall: {'Squat': 1.0, 'OHP': 1.0, 'knees forward error': 0.0, 'knees inward error': 0.0, 'elbows error': 0.0, 'knees error': 0.0}
+F1: {'Squat': 1.0, 'OHP': 1.0, 'knees forward error': 0.0, 'knees inward error': 0.0, 'elbows error': 0.0, 'knees error': 0.0}

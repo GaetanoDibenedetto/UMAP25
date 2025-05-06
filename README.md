@@ -1,4 +1,7 @@
-# UMAP25-87
+<a href="pdf/paper_umap25.pdf"><img src="https://img.shields.io/badge/Paper-PDF-blue"/></a>
+<a href=""><img src="https://img.shields.io/badge/Poster-PDF-red"/></a>
+
+# Fine-Tuning Large Multimodal Models for Fitness Action Quality Assessment
 
 ## Usage
 
